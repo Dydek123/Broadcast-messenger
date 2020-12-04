@@ -1,74 +1,79 @@
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.Socket;
-import java.util.Scanner;
 
-// ClientHandler class
 class ClientHandler implements Runnable
 {
-    Scanner scn = new Scanner(System.in);
-    private final String name;
+    private final int name;
     final DataInputStream dis;
     final DataOutputStream dos;
     Socket s;
-    boolean isloggedin;
 
-    // constructor 
-    public ClientHandler(Socket s, String name,
+    public ClientHandler(Socket s, int name,
                          DataInputStream dis, DataOutputStream dos) {
         this.dis = dis;
         this.dos = dos;
         this.name = name;
         this.s = s;
-        this.isloggedin=true;
+    }
+
+    public int getName() {
+        return name;
     }
 
     @Override
     public void run() {
 
-        String received;
         while (true)
         {
             try
             {
-                // receive the string 
-                received = dis.readUTF();
+                byte[] msgReceived = new byte[dis.readInt()];
+                for (int i=0 ; i< msgReceived.length ; i++) {
+                    msgReceived[i] = dis.readByte();
+                }
 
-                System.out.println(received);
+                BigInteger bigInt = BigInteger.valueOf(this.name);
+                byte[] name = bigInt.toByteArray();
+                if (this.name<10)
+                    msgReceived[2] = name[0];
+                else {
+                    msgReceived[1] = name[0];
+                    msgReceived[2] = name[1];
+                }
 
-                if(received.equals("logout")){
-                    this.isloggedin=false;
+                System.out.println("Received message from: " + this.name);
+
+                if(msgReceived[0] == 4){
+                    Server.logout(this.name);
                     this.s.close();
                     break;
                 }
-
-                // break the string into message and recipient part
-                String MsgToSend = received;
-
-                // search for the recipient in the connected devices list. 
-                // ar is the vector storing client of active users 
-                for (ClientHandler mc : Server.clientHandlers)
-                {
-                    if (mc.isloggedin==true)
-                    {
-                        mc.dos.writeUTF(this.name+" : "+MsgToSend);
-                    }
-                }
+                else
+                    Server.notifyObservers(this.name, msgReceived);
             } catch (IOException e) {
 
                 e.printStackTrace();
             }
-
         }
         try
         {
-            // closing resources 
             this.dis.close();
             this.dos.close();
-
         }catch(IOException e){
             e.printStackTrace();
+        }
+    }
+
+
+    public void notify(int sender, byte[] MsgToSend){
+        try {
+            this.dos.writeInt(MsgToSend.length);
+            this.dos.write(MsgToSend);
+        } catch (IOException exception) {
+            exception.printStackTrace();
         }
     }
 } 

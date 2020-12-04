@@ -6,61 +6,52 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-// Server class
 public class Server extends ClientHandler
 {
+    static List<ClientHandler> observerCollection = new ArrayList<>();
+    static int i = 1;
 
-    // Vector to store active clients
-    static List<ClientHandler> clientHandlers = new ArrayList<>();
-
-    // counter for clients
-    static int i = 0;
-
-    public Server(Socket socket, String name, DataInputStream input, DataOutputStream output) {
+    public Server(Socket socket, int name, DataInputStream input, DataOutputStream output) {
         super(socket, name, input, output);
     }
 
     public static void main(String[] args) throws IOException
     {
-        // server is listening on port 1234
-        ServerSocket ss = new ServerSocket(9999);
+        ServerSocket serverSocket = new ServerSocket(9999);
+        Socket socket;
 
-        Socket s;
-
-        // running infinite loop for getting
-        // client request
         while (true)
         {
-            // Accept the incoming request
-            s = ss.accept();
+            socket = serverSocket.accept();
+            System.out.println("New client request received : " + socket);
 
-            System.out.println("New client request received : " + s);
+            DataInputStream dis = new DataInputStream(socket.getInputStream());
+            DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
 
-            // obtain input and output streams
-            DataInputStream dis = new DataInputStream(s.getInputStream());
-            DataOutputStream dos = new DataOutputStream(s.getOutputStream());
+            ClientHandler mtch = new ClientHandler(socket,i, dis, dos);
 
-            System.out.println("Creating a new handler for this client...");
-
-            // Create a new handler object for handling this request.
-            ClientHandler mtch = new ClientHandler(s,"client " + i, dis, dos);
-
-            // Create a new Thread with this object.
             Thread t = new Thread(mtch);
-
-            System.out.println("Adding this client to active client list");
-
-            // add this client to active clients list
-            clientHandlers.add(mtch);
-
-            // start the thread.
+            observerCollection.add(mtch);
             t.start();
-
-            // increment i for new client.
-            // i is used for naming only, and can be replaced
-            // by any naming scheme
             i++;
-
         }
+    }
+
+    public static void notifyObservers(int sender, byte[] MsgToSend){
+        for (ClientHandler mc : Server.observerCollection)
+        {
+            mc.notify(sender, MsgToSend);
+        }
+    }
+
+    public static void logout(int name) throws IOException {
+        for (int i=0 ; i<Server.observerCollection.size() ; i++){
+            ClientHandler mc = Server.observerCollection.get(i);
+            if (mc.getName()==(name)) {
+                Server.observerCollection.remove(i);
+                System.out.println("Client : " + name + " has logged out");
+            }
+        }
+        System.out.println(Server.observerCollection);
     }
 }
