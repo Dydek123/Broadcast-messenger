@@ -19,7 +19,7 @@ public class Client
         Socket s = new Socket(ip, ServerPort);
         DataInputStream dis = new DataInputStream(s.getInputStream());
         DataOutputStream dos = new DataOutputStream(s.getOutputStream());
-
+        System.out.println("Menu:\ntype: \"text\" to send text message\ntype: \"image\" to send photo\ntype: \"sound\" to send .wav file\ntype: \"logout\" to logout\n");
         Thread sendMessage = new Thread(() -> {
             while (true) {
                 BufferedReader scn = new BufferedReader(new InputStreamReader(System.in));
