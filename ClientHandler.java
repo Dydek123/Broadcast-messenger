@@ -47,6 +47,7 @@ class ClientHandler implements Runnable
                 System.out.println("Received message from: " + this.name);
 
                 if(msgReceived[0] == 4){
+                    notify(this.name, msgReceived);
                     Server.logout(this.name);
                     this.s.close();
                     break;

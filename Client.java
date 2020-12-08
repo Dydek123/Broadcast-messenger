@@ -8,11 +8,11 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 public class Client
 {
     final static int ServerPort = 9999;
-
     public static void main(String[] args) throws IOException
     {
         InetAddress ip = InetAddress.getByName("localhost");
@@ -59,7 +59,8 @@ public class Client
                         dos.write(toSend);
                     } else if (type.equals("logout")){
                         preambula = 4;
-                        byte[] msgByte = "logout".getBytes(  StandardCharsets.UTF_8);
+                        String msg = new String("logout");
+                        byte[] msgByte = msg.getBytes(  StandardCharsets.UTF_8);
                         byte[] toSend = messageToSend(msgByte, preambula);
                         dos.writeInt(toSend.length);
                         dos.write(toSend);
@@ -81,6 +82,12 @@ public class Client
 
                     Message messsage = new Message(msgReceived);
                     ChainElement chainElement = new TextElement();
+                    byte[] msg = messsage.getContent();
+                    if (Arrays.equals(msg, "logout".getBytes())){
+                        System.out.println("Wylogowano");
+                        break;
+//                        s.close();
+                    }
                     System.out.println(chainElement.handleRequest(messsage));
                 } catch (IOException e) {
 
@@ -91,7 +98,6 @@ public class Client
 
         sendMessage.start();
         readMessage.start();
-
     }
 
     private static byte[] messageToSend(byte[] msgByte, int preambula){
